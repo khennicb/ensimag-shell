@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h> 
 
 #include "variante.h"
 #include "readcmd.h"
@@ -56,6 +58,26 @@ void terminate(char *line) {
 	  free(line);
 	printf("exit\n");
 	exit(0);
+}
+
+void execInst(struct cmdline *l){
+	pid_t pid;
+	switch( pid = fork() ) {
+		case -1:
+			l->err = "Error during fork";
+			// perror("fork:");
+			break;
+		case 0:
+			execvp(*(l->seq[0]), *(l->seq));
+			break;
+		default:
+		{ 
+			int status;
+			waitpid(pid, &status, 0);
+			// TODO : le pere doit-il faire autre chose ? 
+			break;
+		}
+	}
 }
 
 
@@ -107,6 +129,8 @@ int main() {
 			terminate(0);
 		}
 		
+		// execute la ligne d'instruction
+		execInst(l);
 
 		
 		if (l->err) {
