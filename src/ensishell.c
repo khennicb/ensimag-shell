@@ -87,7 +87,7 @@ static void unset_handler(int pid){
 
 	if(ptr != NULL) {
 		nb_bg_process--;
-		printf("process %d just died.", pid);
+		printf("process %d just died. \n", pid);
 		if(before_ptr != NULL) {
 			before_ptr->next = ptr->next;
 		} else {
