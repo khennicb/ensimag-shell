@@ -24,11 +24,13 @@
  * lines in CMakeLists.txt.
  */
 
+// background process counter
+static int nb_bg_process = 0;
+
+
 #if USE_GUILE == 1
 #include <libguile.h>
 
-// background process counter
-static int nb_bg_process = 0;
 
 
 int question6_executer(char *line)
@@ -80,10 +82,10 @@ static void unset_handler(){
 static void child_handler(int sig)
 {
     int status;
-
+    int pid;
     /* EEEEXTEERMINAAATE! */
-	waitpid(-1, &status, WNOHANG);
-
+	pid = waitpid(-1, &status, WNOHANG);
+	printf("process %d just died.", pid);
     unset_handler();
 }
 
