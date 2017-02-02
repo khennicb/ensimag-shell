@@ -27,6 +27,10 @@
 #if USE_GUILE == 1
 #include <libguile.h>
 
+// background process counter
+static int nb_bg_process = 0;
+
+
 int question6_executer(char *line)
 {
 	/* Question 6: Insert your code to execute the command line
@@ -60,6 +64,45 @@ void terminate(char *line) {
 	exit(0);
 }
 
+
+
+static void unset_handler(){
+
+	if(	nb_bg_process == 1) {
+	    // unset the handler
+   		signal(SIGCHLD, SIG_DFL);
+	}
+
+	nb_bg_process--;
+}
+
+// Handler SIGCHLD
+static void child_handler(int sig)
+{
+    int status;
+
+    /* EEEEXTEERMINAAATE! */
+	waitpid(-1, &status, WNOHANG);
+
+    unset_handler();
+}
+
+
+static void set_handler(){
+
+	if (nb_bg_process == 0) {
+		struct sigaction sa;
+		sigemptyset(&sa.sa_mask);
+		sa.sa_flags = 0;
+		sa.sa_handler = child_handler;
+
+		sigaction(SIGCHLD, &sa, NULL);
+	}
+
+	nb_bg_process++;
+}
+
+
 void execInst(struct cmdline *l){
 	pid_t pid;
 	switch( pid = fork() ) {
@@ -72,8 +115,12 @@ void execInst(struct cmdline *l){
 			break;
 		default:
 		{ 
-			int status;
-			waitpid(pid, &status, 0);
+			if (l->bg==0) {
+				int status;
+				waitpid(pid, &status, 0);
+			} else {
+				set_handler();
+			}
 			// TODO : le pere doit-il faire autre chose ? 
 			break;
 		}
