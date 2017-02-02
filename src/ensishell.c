@@ -26,6 +26,13 @@
 
 // background process counter
 static int nb_bg_process = 0;
+struct pid_cell *bg_process_list;
+
+struct pid_cell {
+	int pid;
+	char *name;
+	struct pid_cell *next;
+};
 
 
 #if USE_GUILE == 1
@@ -90,7 +97,7 @@ static void child_handler(int sig)
 }
 
 
-static void set_handler(){
+static void set_handler(int pid, char* name){
 
 	if (nb_bg_process == 0) {
 		struct sigaction sa;
@@ -102,6 +109,13 @@ static void set_handler(){
 	}
 
 	nb_bg_process++;
+
+	struct pid_cell *new_cell = (struct pid_cell*) malloc(sizeof struct pid_cell);
+	new_cell->pid = pid;
+	new_cell->name = name;
+	new_cell->next = bg_process_list;
+	bg_process_list = new_cell;
+
 }
 
 
