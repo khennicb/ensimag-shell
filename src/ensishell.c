@@ -75,14 +75,40 @@ void terminate(char *line) {
 
 
 
-static void unset_handler(){
+static void unset_handler(int pid){
 
-	if(	nb_bg_process == 1) {
+	struct pid_cell *ptr = bg_process_list;
+	struct pid_cell *before_ptr = NULL;
+
+	while(ptr != NULL && ptr->pid != pid) {
+		before_ptr = ptr;
+		ptr = ptr->next;
+	}
+
+	if(ptr != NULL) {
+		nb_bg_process--;
+		printf("process %d just died.", pid);
+		if(before_ptr != NULL) {
+			before_ptr->next = ptr->next;
+		} else {
+			if(ptr->next == NULL) {
+				bg_process_list = NULL;
+			} else {
+				bg_process_list = ptr->next;
+			}
+		}
+		free(ptr->name);
+		free(ptr);
+		ptr=NULL;
+
+	}
+
+
+	if (bg_process_list == NULL) {
 	    // unset the handler
    		signal(SIGCHLD, SIG_DFL);
 	}
 
-	nb_bg_process--;
 }
 
 // Handler SIGCHLD
@@ -92,8 +118,7 @@ static void child_handler(int sig)
     int pid;
     /* EEEEXTEERMINAAATE! */
 	pid = waitpid(-1, &status, WNOHANG);
-	printf("process %d just died.", pid);
-    unset_handler();
+    unset_handler(pid);
 }
 
 
@@ -110,9 +135,10 @@ static void set_handler(int pid, char* name){
 
 	nb_bg_process++;
 
-	struct pid_cell *new_cell = (struct pid_cell*) malloc(sizeof struct pid_cell);
+	struct pid_cell *new_cell = (struct pid_cell*) malloc(sizeof(struct pid_cell));
 	new_cell->pid = pid;
-	new_cell->name = name;
+	new_cell->name = malloc(sizeof(char) * strlen(name) + 1);
+	strcpy(new_cell->name, name);
 	new_cell->next = bg_process_list;
 	bg_process_list = new_cell;
 
@@ -135,7 +161,7 @@ void execInst(struct cmdline *l){
 				int status;
 				waitpid(pid, &status, 0);
 			} else {
-				set_handler(pid, (l->seq[0]));
+				set_handler(pid, *(l->seq[0]));
 			}
 			// TODO : le pere doit-il faire autre chose ? 
 			break;
