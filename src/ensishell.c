@@ -135,7 +135,7 @@ void execInst(struct cmdline *l){
 				int status;
 				waitpid(pid, &status, 0);
 			} else {
-				set_handler();
+				set_handler(pid, (l->seq[0]));
 			}
 			// TODO : le pere doit-il faire autre chose ? 
 			break;
