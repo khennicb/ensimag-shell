@@ -144,6 +144,15 @@ static void set_handler(int pid, char* name){
 
 }
 
+void execJobs(){
+	struct pid_cell *ptr = bg_process_list;
+
+	while(ptr != NULL){
+		printf("%d %s\n", ptr->pid, ptr->name);
+		ptr = ptr->next;
+	}
+}
+
 
 void execInst(struct cmdline *l){
 	pid_t pid;
@@ -153,6 +162,10 @@ void execInst(struct cmdline *l){
 			// perror("fork:");
 			break;
 		case 0:
+			if (strcmp(*(l->seq[0]), "jobs") == 0)
+			{
+				execJobs();
+			}
 			execvp(*(l->seq[0]), *(l->seq));
 			break;
 		default:
