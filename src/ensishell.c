@@ -173,7 +173,13 @@ void execIn(struct cmdline *l){
 }
 
 void execOut(struct cmdline *l){
+	int res;
+	int file;
+	open(file);
 
+	dup2(file, 0);
+	close(file);
+	
 }
 
 void execInst(struct cmdline *l){
@@ -184,18 +190,18 @@ void execInst(struct cmdline *l){
 			// perror("fork:");
 			break;
 		case 0:
+			if(l->in){
+				execIn(l);
+			}
+
+			if (l->out)	{
+				execOut(l);
+			}
+
 			if (strcmp(*(l->seq[0]), "jobs") == 0) {
 				execJobs();
 			} else if (l->seq[1]!=0) {
 				execPipe(l);
-			} else if (l->in || l->out) {
-				if(l->in){
-					execIn(l);
-				}
-
-				if (l->out)	{
-					execOut(l);
-				}
 			} else {
 				execvp(*(l->seq[0]), l->seq[0]);
 			}
