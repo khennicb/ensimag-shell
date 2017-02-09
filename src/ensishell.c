@@ -153,6 +153,21 @@ void execJobs(){
 	}
 }
 
+void execPipe(struct cmdline *l){
+	int res;
+	int tuyau[2];
+	pipe(tuyau);
+
+	if((res=fork())==0) {
+		dup2(tuyau[0], 0);
+		close(tuyau[1]); close(tuyau[0]);
+		execvp(*(l->seq[1]), l->seq[1]);
+	}
+	dup2(tuyau[1], 1);
+	close(tuyau[0]); close(tuyau[1]);
+	execvp(*(l->seq[0]), l->seq[0]);
+}
+
 
 void execInst(struct cmdline *l){
 	pid_t pid;
@@ -165,8 +180,12 @@ void execInst(struct cmdline *l){
 			if (strcmp(*(l->seq[0]), "jobs") == 0)
 			{
 				execJobs();
+			} else if (l->seq[1]!=0)
+			{
+				execPipe(l);
+			} else{
+				execvp(*(l->seq[0]), l->seq[0]);
 			}
-			execvp(*(l->seq[0]), *(l->seq));
 			break;
 		default:
 		{ 
