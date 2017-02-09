@@ -10,6 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h> 
+#include <fcntl.h>
 
 #include "variante.h"
 #include "readcmd.h"
@@ -169,17 +170,18 @@ void execPipe(struct cmdline *l){
 }
 
 void execIn(struct cmdline *l){
-
-}
-
-void execOut(struct cmdline *l){
-	int res;
-	int file;
-	open(file);
+	int file = open(l->in, O_RDONLY);
 
 	dup2(file, 0);
 	close(file);
-	
+}
+
+void execOut(struct cmdline *l){
+	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+	int file = open(l->out, O_WRONLY | O_CREAT | O_TRUNC, mode);
+
+	dup2(file, 1);
+	close(file);
 }
 
 void execInst(struct cmdline *l){
