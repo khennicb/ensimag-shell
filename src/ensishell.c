@@ -50,7 +50,7 @@ int question6_executer(char *line)
 	 */
 
 
-	 // TODO : N'est visiblement jamais appelle
+	 // TODO : A tester (j'arrive pas a tester sur mon ordi, il faut avoir guile)
 	printf("blop\n");
 
 	/* parsecmd free line and set it up to 0 */
@@ -237,7 +237,7 @@ void execInst(struct cmdline *l){
 
 int main() {
         printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
-
+        printf("%d\n", USE_GUILE);
 #if USE_GUILE == 1
         scm_init_guile();
         /* register "executer" function in scheme */
