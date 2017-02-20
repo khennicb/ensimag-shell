@@ -48,11 +48,23 @@ int question6_executer(char *line)
 	 * parsecmd, then fork+execvp, for a single command.
 	 * pipe and i/o redirection are not required.
 	 */
-	printf("Not implemented yet: can not execute %s\n", line);
 
-	/* Remove this line when using parsecmd as it will free it */
-	free(line);
-	
+
+	 // TODO : N'est visiblement jamais appelle
+	printf("blop\n");
+
+	/* parsecmd free line and set it up to 0 */
+	l = parsecmd( & line);
+
+	/* If input stream closed, normal termination */
+	if (!l) {
+		terminate(0);
+	}
+
+	// execute la ligne d'instruction
+	execInst(l);
+
+
 	return 0;
 }
 
