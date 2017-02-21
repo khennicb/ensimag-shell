@@ -181,6 +181,79 @@ void execPipe(struct cmdline *l){
 	execvp(*(l->seq[0]), l->seq[0]);
 }
 
+
+// compte le numero de la commande
+int num_comm = 0;
+// Cree un tableau pour contenir les pipes
+//int tabPipe[?][2];
+
+void execMultiPipe(struct cmdline *l){
+	int i;
+	for (i=0; l->seq[i]!=0; i++){}
+	int nb_comm = i;
+	printf("%d\n", nb_comm);
+
+	// Replir le tableau contenant les pipes
+	//int tabPipe[nb_comm][2];
+
+	// Boucle pour creer autant de pipe que necessaire
+	for (i=0; l->seq[i+1]!=0; i++){ // Inutile de creer un pipe pour le dernier fils
+		int tuyau[2];
+		if (pipe(tuyau) ==  -1)
+		{
+			l->err = "Error during pipe"; return;
+		}
+		// branchement des pipes
+		tabPipe[i][0]=mon_tube[0];//On branche la lecture
+    	tabPipe[i][1]=mon_tube[1];//On branche l'écriture
+	}
+
+	// boucle de fork pour creer les fils
+
+	// ATTENTION : faire en sorte que les fils s'execute dans le bon ordre
+	// IDEE : utiliser un mutex + compteur pour s'avoir quelle commande le fils reveille doit execter
+	// utiliser sigaction ?
+
+
+/*
+stdin > commande_0 > === job->tubes[0]=== > commande_1 > ===
+job->tubes[1] === > … > === job->tubes[n-1] === > commande_n > stdout
+
+S'il faut éxécuter (n+1) commandes, il faut donc ouvrir (n) tubes
+différents, dont les tableaux de "file descriptors" tubes[i] doivent
+être stockés dans la structure job_t.
+
+Si le fils n'exécute pas la première commande, (disons qu'il exécute la
+commande commande_i) il va devoir brancher son stdin sur job->tubes[i-1][0].
+Si le fils n'exécute pas la dernière commande, (disons qu'il exécute la
+commande commande_i) il va devoir brancher son stdout sur job->tubes[i][1].
+Dans tous les cas, chaque fils doit fermer les accès dont il ne se sert
+pas aux tubes qui l'entourent.
+
+Le père doit systématiquement fermer ses accès à chaque tube ouvert : il
+ne s'en sert jamais.
+*/
+	if (num_comm == 0) { // On est le premier
+		dup2(tabPipe[num_comm][1], STDOUT_FILENO);
+	}else if(num_comm == nb_comm){ // On est le dernier
+		dup2(tabPipe[num_comm-1][0], STDIN_FILENO);
+	}else{
+		dup2(tabPipe[num_comm-1][0], STDIN_FILENO);
+      	dup2(tabPipe[num_comm][1], STDOUT_FILENO);
+	}
+
+	// On ferme tous les pipes
+	for (i=0; l->seq[i+1]!=0; i++){ 
+      	close(tabPipe[i-1][0]); 
+      	close(tabPipe[i-1][1]); 
+	}
+
+	//On execute la commande ici
+    int res_e = execvp(*(l->seq[num_comm]), l->seq[num_comm]);
+    if (res_e==-1) {l->err = "Error during execvp"; return;}
+
+}
+
 void execIn(struct cmdline *l){
 	int file = open(l->in, O_RDONLY);
 
@@ -215,7 +288,8 @@ void execInst(struct cmdline *l){
 			if (strcmp(*(l->seq[0]), "jobs") == 0) {
 				execJobs();
 			} else if (l->seq[1]!=0) {
-				execPipe(l);
+				execMultiPipe(l);
+				//execPipe(l);
 			} else {
 				execvp(*(l->seq[0]), l->seq[0]);
 			}
