@@ -173,6 +173,22 @@ void execJobs(){
 	}
 }
 
+// void execPipe(struct cmdline *l){
+// 	int res;
+// 	int tuyau[2];
+// 	pipe(tuyau);
+
+// 	if((res=fork())==0) {
+// 		dup2(tuyau[0], 0);
+// 		close(tuyau[1]); close(tuyau[0]);
+// 		execvp(*(l->seq[1]), l->seq[1]);
+// 	}
+// 	dup2(tuyau[1], 1);
+// 	close(tuyau[0]); close(tuyau[1]);
+// 	execvp(*(l->seq[0]), l->seq[0]);
+// }
+
+
 void execPipe(struct cmdline *l){
 	int res;
 	int tuyau[2];
@@ -181,12 +197,17 @@ void execPipe(struct cmdline *l){
 	if((res=fork())==0) {
 		dup2(tuyau[0], 0);
 		close(tuyau[1]); close(tuyau[0]);
+		if(l->seq[2]!=0) { // There is an other pipe 
+			execPipe(l+1);
+		}
 		execvp(*(l->seq[1]), l->seq[1]);
+	} else {
+		dup2(tuyau[1], 1);
+		close(tuyau[0]); close(tuyau[1]);
+		execvp(*(l->seq[0]), l->seq[0]);
 	}
-	dup2(tuyau[1], 1);
-	close(tuyau[0]); close(tuyau[1]);
-	execvp(*(l->seq[0]), l->seq[0]);
 }
+
 
 
 // compte le numero de la commande
@@ -196,12 +217,65 @@ int num_comm = 0;
 
 void execMultiPipe(struct cmdline *l){
 
-	int nb_pipe;
-	for (int i=1; l->seq[i]!=0; i++){
-		execPipe(l+i-1);
-		nb_pipe = i;
+
+	int res;
+	int tuyau[2];
+	pipe(tuyau);
+
+
+	int nb_process = 0; 
+	int tuyau[nb_process][2];
+	for (nb_process=0; l->seq[nb_process]!=0; nb_process++){
+			tuyau[nb_process] = ;
 	}
-	printf("Nombre de pipe : %d\n", nb_pipe);
+
+	// Boucle pour creer autant de pipe que necessaire
+	for (i=0; l->seq[i+1]!=0; i++){ // Inutile de creer un pipe pour le dernier fils
+		int mon_tube[2];
+		if (pipe(tuyau) ==  -1)
+		{
+			l->err = "Error during pipe"; return;
+		}
+		// branchement des pipes
+		tabPipe[i][0]=mon_tube[0];//On branche la lecture
+    	tabPipe[i][1]=mon_tube[1];//On branche l'écriture
+	}
+	
+
+	if((res=fork())==0) {
+		dup2(tuyau[0], 0);
+		close(tuyau[1]); close(tuyau[0]);
+		execvp(*(l->seq[i+1]), l->seq[i+1]);
+	} else {
+		if((res=fork())==0) {
+			dup2(tuyau[1], 1);
+			close(tuyau[0]); close(tuyau[1]);
+			if(l->seq[i+2]!=0) { // There is an other pipe 
+				dup2(tuyau[0], 0);
+				close(tuyau[1]); close(tuyau[0]);
+			}
+			execvp(*(l->seq[i+1]), l->seq[i+1]);
+		}
+	}
+
+
+
+
+	for (int i=0; l->seq[i]!=0; i++){	
+		if((res=fork())==0) {
+			dup2(tuyau[0], 0);
+			close(tuyau[1]); close(tuyau[0]);
+			if(l->seq[i+2]!=0) { // There is an other pipe 
+				execPipe(l+1);
+			}
+			execvp(*(l->seq[i+1]), l->seq[i+1]);
+		} else {
+			dup2(tuyau[1], 1);
+			close(tuyau[0]); close(tuyau[1]);
+			execvp(*(l->seq[i]), l->seq[i]);
+		}
+	}
+
 /*
 	int i;
 	for (i=0; l->seq[i]!=0; i++){}
