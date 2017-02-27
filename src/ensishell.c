@@ -195,6 +195,14 @@ int num_comm = 0;
 //int tabPipe[?][2];
 
 void execMultiPipe(struct cmdline *l){
+
+	int nb_pipe;
+	for (int i=1; l->seq[i]!=0; i++){
+		execPipe(l+i-1);
+		nb_pipe = i;
+	}
+	printf("Nombre de pipe : %d\n", nb_pipe);
+/*
 	int i;
 	for (i=0; l->seq[i]!=0; i++){}
 	int nb_comm = i;
@@ -214,7 +222,7 @@ void execMultiPipe(struct cmdline *l){
 		tabPipe[i][0]=mon_tube[0];//On branche la lecture
     	tabPipe[i][1]=mon_tube[1];//On branche l'écriture
 	}
-
+*/
 	// boucle de fork pour creer les fils
 
 	// ATTENTION : faire en sorte que les fils s'execute dans le bon ordre
@@ -239,7 +247,7 @@ pas aux tubes qui l'entourent.
 
 Le père doit systématiquement fermer ses accès à chaque tube ouvert : il
 ne s'en sert jamais.
-*/
+
 	if (num_comm == 0) { // On est le premier
 		dup2(tabPipe[num_comm][1], STDOUT_FILENO);
 	}else if(num_comm == nb_comm){ // On est le dernier
@@ -260,7 +268,7 @@ ne s'en sert jamais.
 	//On execute la commande ici
     int res_e = execvp(*(l->seq[num_comm]), l->seq[num_comm]);
     if (res_e==-1) {l->err = "Error during execvp"; return;}
-
+*/
 }
 
 void execIn(struct cmdline *l){
@@ -297,8 +305,9 @@ void execInst(struct cmdline *l){
 			if (strcmp(*(l->seq[0]), "jobs") == 0) {
 				execJobs();
 			} else if (l->seq[1]!=0) {
-				//execMultiPipe(l);
-				execPipe(l);
+				printf("aernohiubiiiblegbilibul");
+				execMultiPipe(l);
+				//execPipe(l);
 			} else {
 				execvp(*(l->seq[0]), l->seq[0]);
 			}
