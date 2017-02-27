@@ -36,10 +36,20 @@ struct pid_cell {
 };
 
 
+// predeclarition
+void terminate(char *line);
+static void unset_handler(int pid);
+static void child_handler(int sig);
+void execJobs();
+void execPipe(struct cmdline *l);
+void execIn(struct cmdline *l);
+void execOut(struct cmdline *l);
+void execInst(struct cmdline *l);
+
+
+
 #if USE_GUILE == 1
 #include <libguile.h>
-
-
 
 int question6_executer(char *line)
 {
@@ -48,10 +58,7 @@ int question6_executer(char *line)
 	 * parsecmd, then fork+execvp, for a single command.
 	 * pipe and i/o redirection are not required.
 	 */
-
-
-	 // TODO : A tester (j'arrive pas a tester sur mon ordi, il faut avoir guile)
-	printf("blop\n");
+	struct cmdline *l;
 
 	/* parsecmd free line and set it up to 0 */
 	l = parsecmd( & line);
@@ -242,6 +249,8 @@ ne s'en sert jamais.
       	dup2(tabPipe[num_comm][1], STDOUT_FILENO);
 	}
 
+
+
 	// On ferme tous les pipes
 	for (i=0; l->seq[i+1]!=0; i++){ 
       	close(tabPipe[i-1][0]); 
@@ -288,8 +297,8 @@ void execInst(struct cmdline *l){
 			if (strcmp(*(l->seq[0]), "jobs") == 0) {
 				execJobs();
 			} else if (l->seq[1]!=0) {
-				execMultiPipe(l);
-				//execPipe(l);
+				//execMultiPipe(l);
+				execPipe(l);
 			} else {
 				execvp(*(l->seq[0]), l->seq[0]);
 			}
