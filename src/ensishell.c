@@ -75,7 +75,7 @@ void terminate(char *line) {
 
 
 
-static void unset_handler(int pid){
+static void unset_handler(int pid, int status){
 
 	struct pid_cell *ptr = bg_process_list;
 	struct pid_cell *before_ptr = NULL;
@@ -118,11 +118,14 @@ static void child_handler(int sig)
     int pid;
     /* EEEEXTEERMINAAATE! */
 	pid = waitpid(-1, &status, WNOHANG);
-    unset_handler(pid);
+    unset_handler(pid, status);
 }
 
 
 static void set_handler(int pid, char* name){
+
+	int status;
+	waitpid(pid, &status, WNOHANG);
 
 	if (nb_bg_process == 0) {
 		struct sigaction sa;
