@@ -226,6 +226,7 @@ void execMultiPipe(struct cmdline *l){
 		      	close(tuyau[j][1]); 
 			}
 
+
 			//On execute la commande ici
 			int res_e = execvp(*(l->seq[i]), l->seq[i]);
 			if (res_e==-1) {l->err = "Error during execvp"; return;}
@@ -236,13 +237,17 @@ void execMultiPipe(struct cmdline *l){
 	for (int j = 0; j<nb_process-1; j++){ 
       	close(tuyau[j][0]); 
     	close(tuyau[j][1]); 
+    	free(tuyau[j]);
 	}
+	free(tuyau);
+    	
 
 	// On attend les fils
 	for(int i = 0; i<nb_process; i++) {
 		int status;
 		wait(&status);
 	}
+
 
 	exit(0);
 }
