@@ -221,20 +221,60 @@ int num_comm = 0;
 void execMultiPipe(struct cmdline *l){
 
 
-	int res;
-	int tuyau[2];
-	pipe(tuyau);
-
 
 	int nb_process = 0; 
-	int tuyau[nb_process][2];
 	for (nb_process=0; l->seq[nb_process]!=0; nb_process++){
-			tuyau[nb_process] = ;
+		//nothing
 	}
 
+//	printf("nb_process = %d \n", nb_process);
+
+	int **tuyau = malloc( (nb_process-1) * sizeof(int*));
+	for (int i = 0; i<nb_process-1; i++){
+		tuyau[i] =  malloc(2 * sizeof(int));
+		if (pipe(tuyau[i]) ==  -1) {
+			l->err = "Error during pipe"; return;
+		}
+	}
+
+	int res = 1;
+	for (int i = 0; i<nb_process && res !=0; i++) {
+		//printf("i'll create a child \n");
+		res=fork();
+		if(res==0) {
+		//	printf("i'm the child number %d \n", i);
+			if(i != 0) {
+		//		printf("Input on pipe \"%d\" \n", i-1);
+				dup2(tuyau[i-1][0], STDIN_FILENO);
+			}
+			if( i!=nb_process-1) {
+		//		printf("Output on pipe \"%d\" \n", i-1);
+				dup2(tuyau[i][1], STDOUT_FILENO);
+			}
+			for (int j = 0; j<nb_process-1; j++){ 
+		      	close(tuyau[j][0]); 
+		      	close(tuyau[j][1]); 
+			}
+			int res_e = execvp(*(l->seq[i]), l->seq[i]);
+			if (res_e==-1) {l->err = "Error during execvp"; return;}
+		}
+	}
+
+	for (int j = 0; j<nb_process-1; j++){ 
+      	close(tuyau[j][0]); 
+    	close(tuyau[j][1]); 
+	}
+
+	for(int i = 0; i<nb_process; i++) {
+		int status;
+		wait(&status);
+	}
+
+	exit(0);
+
+/*
 	// Boucle pour creer autant de pipe que necessaire
 	for (i=0; l->seq[i+1]!=0; i++){ // Inutile de creer un pipe pour le dernier fils
-		int mon_tube[2];
 		if (pipe(tuyau) ==  -1)
 		{
 			l->err = "Error during pipe"; return;
@@ -278,7 +318,7 @@ void execMultiPipe(struct cmdline *l){
 			execvp(*(l->seq[i]), l->seq[i]);
 		}
 	}
-
+*/
 /*
 	int i;
 	for (i=0; l->seq[i]!=0; i++){}
@@ -382,7 +422,6 @@ void execInst(struct cmdline *l){
 			if (strcmp(*(l->seq[0]), "jobs") == 0) {
 				execJobs();
 			} else if (l->seq[1]!=0) {
-				printf("aernohiubiiiblegbilibul");
 				execMultiPipe(l);
 				//execPipe(l);
 			} else {
