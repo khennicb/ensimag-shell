@@ -382,7 +382,6 @@ void execInst(struct cmdline *l){
 			if (strcmp(*(l->seq[0]), "jobs") == 0) {
 				execJobs();
 			} else if (l->seq[1]!=0) {
-				printf("aernohiubiiiblegbilibul");
 				execMultiPipe(l);
 				//execPipe(l);
 			} else {
