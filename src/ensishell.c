@@ -176,23 +176,7 @@ void execJobs(){
 	}
 }
 
-// void execPipe(struct cmdline *l){
-// 	int res;
-// 	int tuyau[2];
-// 	pipe(tuyau);
-
-// 	if((res=fork())==0) {
-// 		dup2(tuyau[0], 0);
-// 		close(tuyau[1]); close(tuyau[0]);
-// 		execvp(*(l->seq[1]), l->seq[1]);
-// 	}
-// 	dup2(tuyau[1], 1);
-// 	close(tuyau[0]); close(tuyau[1]);
-// 	execvp(*(l->seq[0]), l->seq[0]);
-// }
-
-
-void execPipe(struct cmdline *l){
+/*void execPipe(struct cmdline *l){
 	int res;
 	int tuyau[2];
 	pipe(tuyau);
@@ -200,35 +184,22 @@ void execPipe(struct cmdline *l){
 	if((res=fork())==0) {
 		dup2(tuyau[0], 0);
 		close(tuyau[1]); close(tuyau[0]);
-		if(l->seq[2]!=0) { // There is an other pipe 
-			execPipe(l+1);
-		}
 		execvp(*(l->seq[1]), l->seq[1]);
-	} else {
-		dup2(tuyau[1], 1);
-		close(tuyau[0]); close(tuyau[1]);
-		execvp(*(l->seq[0]), l->seq[0]);
 	}
-}
+	dup2(tuyau[1], 1);
+	close(tuyau[0]); close(tuyau[1]);
+	execvp(*(l->seq[0]), l->seq[0]);
+}*/
 
-
-
-// compte le numero de la commande
-int num_comm = 0;
-// Cree un tableau pour contenir les pipes
-//int tabPipe[?][2];
 
 void execMultiPipe(struct cmdline *l){
-
-
-
+	// On compte le nombre de process
 	int nb_process = 0; 
 	for (nb_process=0; l->seq[nb_process]!=0; nb_process++){
 		//nothing
 	}
 
-//	printf("nb_process = %d \n", nb_process);
-
+	// On alloue le tableau de tuyaux
 	int **tuyau = malloc( (nb_process-1) * sizeof(int*));
 	for (int i = 0; i<nb_process-1; i++){
 		tuyau[i] =  malloc(2 * sizeof(int));
@@ -237,155 +208,43 @@ void execMultiPipe(struct cmdline *l){
 		}
 	}
 
+	// On cree les fils
 	int res = 1;
 	for (int i = 0; i<nb_process && res !=0; i++) {
-		//printf("i'll create a child \n");
 		res=fork();
 		if(res==0) {
-		//	printf("i'm the child number %d \n", i);
-			if(i != 0) {
-		//		printf("Input on pipe \"%d\" \n", i-1);
-				dup2(tuyau[i-1][0], STDIN_FILENO);
+			if(i != 0) { // Si on n'est pas le premier
+				dup2(tuyau[i-1][0], STDIN_FILENO); // On branche l'entree
 			}
-			if( i!=nb_process-1) {
-		//		printf("Output on pipe \"%d\" \n", i-1);
-				dup2(tuyau[i][1], STDOUT_FILENO);
+			if( i!=nb_process-1) { // Si on est pas le dernier
+				dup2(tuyau[i][1], STDOUT_FILENO); // On branche la sortie
 			}
+
+			// On ferme tous les tuyaux pour les fils
 			for (int j = 0; j<nb_process-1; j++){ 
 		      	close(tuyau[j][0]); 
 		      	close(tuyau[j][1]); 
 			}
+
+			//On execute la commande ici
 			int res_e = execvp(*(l->seq[i]), l->seq[i]);
 			if (res_e==-1) {l->err = "Error during execvp"; return;}
 		}
 	}
 
+	// On ferme tous les tuyaux pour le pere
 	for (int j = 0; j<nb_process-1; j++){ 
       	close(tuyau[j][0]); 
     	close(tuyau[j][1]); 
 	}
 
+	// On attend les fils
 	for(int i = 0; i<nb_process; i++) {
 		int status;
 		wait(&status);
 	}
 
 	exit(0);
-
-/*
-	// Boucle pour creer autant de pipe que necessaire
-	for (i=0; l->seq[i+1]!=0; i++){ // Inutile de creer un pipe pour le dernier fils
-		if (pipe(tuyau) ==  -1)
-		{
-			l->err = "Error during pipe"; return;
-		}
-		// branchement des pipes
-		tabPipe[i][0]=mon_tube[0];//On branche la lecture
-    	tabPipe[i][1]=mon_tube[1];//On branche l'écriture
-	}
-	
-
-	if((res=fork())==0) {
-		dup2(tuyau[0], 0);
-		close(tuyau[1]); close(tuyau[0]);
-		execvp(*(l->seq[i+1]), l->seq[i+1]);
-	} else {
-		if((res=fork())==0) {
-			dup2(tuyau[1], 1);
-			close(tuyau[0]); close(tuyau[1]);
-			if(l->seq[i+2]!=0) { // There is an other pipe 
-				dup2(tuyau[0], 0);
-				close(tuyau[1]); close(tuyau[0]);
-			}
-			execvp(*(l->seq[i+1]), l->seq[i+1]);
-		}
-	}
-
-
-
-
-	for (int i=0; l->seq[i]!=0; i++){	
-		if((res=fork())==0) {
-			dup2(tuyau[0], 0);
-			close(tuyau[1]); close(tuyau[0]);
-			if(l->seq[i+2]!=0) { // There is an other pipe 
-				execPipe(l+1);
-			}
-			execvp(*(l->seq[i+1]), l->seq[i+1]);
-		} else {
-			dup2(tuyau[1], 1);
-			close(tuyau[0]); close(tuyau[1]);
-			execvp(*(l->seq[i]), l->seq[i]);
-		}
-	}
-*/
-/*
-	int i;
-	for (i=0; l->seq[i]!=0; i++){}
-	int nb_comm = i;
-	printf("%d\n", nb_comm);
-
-	// Replir le tableau contenant les pipes
-	//int tabPipe[nb_comm][2];
-
-	// Boucle pour creer autant de pipe que necessaire
-	for (i=0; l->seq[i+1]!=0; i++){ // Inutile de creer un pipe pour le dernier fils
-		int tuyau[2];
-		if (pipe(tuyau) ==  -1)
-		{
-			l->err = "Error during pipe"; return;
-		}
-		// branchement des pipes
-		tabPipe[i][0]=mon_tube[0];//On branche la lecture
-    	tabPipe[i][1]=mon_tube[1];//On branche l'écriture
-	}
-*/
-	// boucle de fork pour creer les fils
-
-	// ATTENTION : faire en sorte que les fils s'execute dans le bon ordre
-	// IDEE : utiliser un mutex + compteur pour s'avoir quelle commande le fils reveille doit execter
-	// utiliser sigaction ?
-
-
-/*
-stdin > commande_0 > === job->tubes[0]=== > commande_1 > ===
-job->tubes[1] === > … > === job->tubes[n-1] === > commande_n > stdout
-
-S'il faut éxécuter (n+1) commandes, il faut donc ouvrir (n) tubes
-différents, dont les tableaux de "file descriptors" tubes[i] doivent
-être stockés dans la structure job_t.
-
-Si le fils n'exécute pas la première commande, (disons qu'il exécute la
-commande commande_i) il va devoir brancher son stdin sur job->tubes[i-1][0].
-Si le fils n'exécute pas la dernière commande, (disons qu'il exécute la
-commande commande_i) il va devoir brancher son stdout sur job->tubes[i][1].
-Dans tous les cas, chaque fils doit fermer les accès dont il ne se sert
-pas aux tubes qui l'entourent.
-
-Le père doit systématiquement fermer ses accès à chaque tube ouvert : il
-ne s'en sert jamais.
-
-	if (num_comm == 0) { // On est le premier
-		dup2(tabPipe[num_comm][1], STDOUT_FILENO);
-	}else if(num_comm == nb_comm){ // On est le dernier
-		dup2(tabPipe[num_comm-1][0], STDIN_FILENO);
-	}else{
-		dup2(tabPipe[num_comm-1][0], STDIN_FILENO);
-      	dup2(tabPipe[num_comm][1], STDOUT_FILENO);
-	}
-
-
-
-	// On ferme tous les pipes
-	for (i=0; l->seq[i+1]!=0; i++){ 
-      	close(tabPipe[i-1][0]); 
-      	close(tabPipe[i-1][1]); 
-	}
-
-	//On execute la commande ici
-    int res_e = execvp(*(l->seq[num_comm]), l->seq[num_comm]);
-    if (res_e==-1) {l->err = "Error during execvp"; return;}
-*/
 }
 
 void execIn(struct cmdline *l){
@@ -436,7 +295,6 @@ void execInst(struct cmdline *l){
 			} else {
 				set_handler(pid, *(l->seq[0]));
 			}
-			// TODO : le pere doit-il faire autre chose ? 
 			break;
 		}
 	}
