@@ -38,7 +38,7 @@ struct pid_cell {
 
 // predeclarition
 void terminate(char *line);
-static void unset_handler(int pid);
+static void unset_handler(int pid, int status);
 static void child_handler(int sig);
 void execJobs();
 void execPipe(struct cmdline *l);
